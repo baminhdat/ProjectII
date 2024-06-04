@@ -1,6 +1,7 @@
 import Model.Cluster;
 import Model.Order;
 
+import javax.swing.*;
 import java.io.FileNotFoundException;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -219,6 +220,12 @@ public class Solver {
             }
         }
         System.out.println("Solving TSP by heuristics, Total cost is "+total);
+        JFrame frame = new JFrame();
+        frame.setSize(1280,720);
+        frame.setTitle("Visualization");
+        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        frame.add(new Visualization(finalClusters,input.orders.get(input.dimension-1)));
+        frame.setVisible(true);
         if(Settings.solveExact) {
             total = 0;
             for(Cluster c: finalClusters){
