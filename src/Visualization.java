@@ -12,11 +12,11 @@ public class Visualization extends JPanel {
     private int radius = 5;
     private int offX;
     private int offY;
-    private float ratio = 3;
+    private double ratio = 3 ;
     public Visualization(ArrayList<Cluster> a, Order order){
         depot = order;
         clusters = a;
-        offX = 640-(int)(depot.coorX*ratio);
+        offX = 640-(int)(depot.coorX*ratio)-200;
         offY = 360-(int)(depot.coorY*ratio);
         this.setBackground(Color.WHITE);
     }

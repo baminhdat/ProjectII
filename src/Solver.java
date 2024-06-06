@@ -140,6 +140,7 @@ public class Solver {
         int iteration = 0;
         int iterWOImprovement = 0;
         while(iteration<Settings.maxIteration){
+            System.out.println(iteration);
             reset();
             for(Order o: input.orders){
                 if(!o.served&&o.demand>0){
@@ -177,6 +178,7 @@ public class Solver {
                 }
             }
             calculateClusters();
+            if(Settings.solveTSPafterClustering) {
             for(Cluster c: clusters){
                 TSP tsp = new TSP(c.id,c.orders,input.orders.get(input.dimension-1),input);
                 tsp.nearestNeighbour();
@@ -193,6 +195,16 @@ public class Solver {
                 iterWOImprovement++;
             }
             total = 0;
+            }
+            else {
+                if (object < objectBSF) {
+                    finalClusters = clusters;
+                    objectBSF = object;
+                    iterWOImprovement = 0;
+                } else {
+                    iterWOImprovement++;
+                }
+            }
             if(iterWOImprovement==Settings.numberWOImprovement){
                 break;
             }
@@ -231,7 +243,6 @@ public class Solver {
             for(Cluster c: finalClusters){
                 TSP tsp = new TSP(c.id,c.orders, input.orders.get(input.dimension-1),input);
                 total+=tsp.solve();
-                tsp.printSol();
             }
             System.out.println("Solving TSP by exact algorithms, Total cost is "+total);
         }
