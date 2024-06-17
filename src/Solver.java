@@ -139,8 +139,8 @@ public class Solver {
         initialization();
         int iteration = 0;
         int iterWOImprovement = 0;
-        while(iteration<Settings.maxIteration){
-            System.out.println(iteration);
+        while(iteration<Settings.maxIteration&&(System.currentTimeMillis()-start)<300000){
+            //System.out.println(iteration);
             reset();
             for(Order o: input.orders){
                 if(!o.served&&o.demand>0){
@@ -150,30 +150,46 @@ public class Solver {
                             return Double.compare(distanceFunction(c1,o), distanceFunction(c2,o));
                         }
                     });
-                    int indexC = 0;
-                    while(!o.served&&indexC<input.vehiclesNumber){
-                        int id = clusters.get(indexC).id;
-                        ArrayList<Integer> acceptableOrders = input.findOrdersWithNearestCentroid(id);
-                        if (!acceptableOrders.contains(input.orders.indexOf(o))){
-                            acceptableOrders.add(input.orders.indexOf(o));
+                    if(Settings.normalKmeans){
+                        int indexC = 0;
+                        clusters.sort(new Comparator<Cluster>() {
+                            @Override
+                            public int compare(Cluster c1, Cluster c2) {
+                                return Double.compare(distanceFunction(c1,o),distanceFunction(c2,o));
+                            }
+                        });
+                        while(!o.served&&indexC<input.vehiclesNumber){
+                            assignToCluster(clusters.get(indexC),o);
+                            indexC++;
                         }
-                        if(!acceptableOrders.isEmpty()) {
-                            int finalIndexC = indexC;
-                            acceptableOrders.sort(new Comparator<Integer>() {
-                                @Override
-                                public int compare(Integer o1, Integer o2) {
-                                    return Double.compare(priorityFunction(clusters.get(finalIndexC),input.orders.get(o1)),priorityFunction(clusters.get(finalIndexC),input.orders.get(o2)));
-                                }});
-                            int run = 0;
-                            while (true) {
-                                assignToCluster(clusters.get(finalIndexC), input.orders.get(acceptableOrders.get(run)));
-                                run++;
-                                if (run > acceptableOrders.size() - 1) {
-                                    break;
+                    }
+                    if(!Settings.normalKmeans){
+                        int indexC = 0;
+                        while(!o.served&&indexC<input.vehiclesNumber) {
+                            int id = clusters.get(indexC).id;
+                            ArrayList<Integer> acceptableOrders = input.findOrdersWithNearestCentroid(id);
+                            if (!acceptableOrders.contains(input.orders.indexOf(o))) {
+                                acceptableOrders.add(input.orders.indexOf(o));
+                            }
+                            if (!acceptableOrders.isEmpty()) {
+                                int finalIndexC = indexC;
+                                acceptableOrders.sort(new Comparator<Integer>() {
+                                    @Override
+                                    public int compare(Integer o1, Integer o2) {
+                                        return Double.compare(priorityFunction(clusters.get(finalIndexC), input.orders.get(o1)), priorityFunction(clusters.get(finalIndexC), input.orders.get(o2)));
+                                    }
+                                });
+                                int run = 0;
+                                while (true) {
+                                    assignToCluster(clusters.get(finalIndexC), input.orders.get(acceptableOrders.get(run)));
+                                    run++;
+                                    if (run > acceptableOrders.size() - 1) {
+                                        break;
+                                    }
                                 }
                             }
+                            indexC++;
                         }
-                        indexC++;
                     }
                 }
             }
@@ -186,7 +202,7 @@ public class Solver {
                 tsp.computeCost();
                 total += tsp.obj;
             }
-            if(total<objectBSF){
+            if(total<=objectBSF){
                 finalClusters = clusters;
                 objectBSF = total;
                 iterWOImprovement=0;
@@ -197,7 +213,7 @@ public class Solver {
             total = 0;
             }
             else {
-                if (object < objectBSF) {
+                if (object <= objectBSF) {
                     finalClusters = clusters;
                     objectBSF = object;
                     iterWOImprovement = 0;
@@ -217,21 +233,24 @@ public class Solver {
             }
         });
         end = System.currentTimeMillis();
-        System.out.println("The algorithm finished in "+(end-start)+" ms.");
+        //System.out.println("The algorithm finished in "+(end-start)+" ms.");
+        int served = 0;
         for(Cluster c: finalClusters){
             if(!c.orders.isEmpty()) {
+                served+=c.orders.size();
                 TSP tsp = new TSP(c.id, c.orders, input.orders.get(input.dimension - 1), input);
                 tsp.nearestNeighbour();
                 tsp.improveBySwaping();
                 tsp.computeCost();
-                tsp.printSol();
+                //tsp.printSol();
                 total += tsp.obj;
             }
             else{
                 System.out.println("Cluster "+c.id+" is empty.");
             }
         }
-        System.out.println("Solving TSP by heuristics, Total cost is "+total);
+        System.out.println("Total cost is "+total);
+        System.out.println("Served "+served+" orders");
         JFrame frame = new JFrame();
         frame.setSize(1280,720);
         frame.setTitle("Visualization");
